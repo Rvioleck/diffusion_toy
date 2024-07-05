@@ -25,12 +25,8 @@ def training_loop(ddpm, loader, n_epochs, optim, device, display=False, store_pa
     best_loss = float("inf")
     n_steps = ddpm.n_steps
 
-    outer_pbar = tqdm(total=n_epochs, desc="Training progress", position=0, colour="#00ff00")
     for epoch in range(n_epochs):
-
-        outer_pbar.set_description(f"Epoch {epoch + 1}/{n_epochs}")
-        inner_pbar = tqdm(total=len(loader), desc=f"Epoch {epoch + 1}/{n_epochs}", position=1, colour="#005500", leave=False)
-
+        inner_pbar = tqdm(total=len(loader), desc=f"Epoch {epoch + 1}/{n_epochs}", colour="#005500", leave=False)
         epoch_loss = 0.0
         for step, batch in enumerate(loader):
             # Loading data
@@ -72,6 +68,4 @@ def training_loop(ddpm, loader, n_epochs, optim, device, display=False, store_pa
             torch.save(ddpm.state_dict(), store_path)
             log_string += " --> Best model ever (stored)"
 
-        outer_pbar.set_postfix_str(log_string)
-        outer_pbar.update(1)
-    outer_pbar.close()
+        tqdm.write(log_string)
