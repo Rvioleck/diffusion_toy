@@ -11,7 +11,7 @@ def train_model(loader, n_epochs, lr, checkpoint_dir, dataset_name=None, device=
     min_beta, max_beta = 10 ** -4, 0.02
     ddpm = MyDDPM(MyUNet(n_steps), n_steps=n_steps, min_beta=min_beta, max_beta=max_beta, device=device)
     # 显示前向加噪过程
-    show_forward(ddpm, loader, device)
+    # show_forward(ddpm, loader, device)
     optim = Adam(ddpm.parameters(), lr=lr)
     # 设置模型保存路径
     model_name = f"ddpm_{dataset_name}.pt"
@@ -25,9 +25,14 @@ def training_loop(ddpm, loader, n_epochs, optim, device, display=False, store_pa
     best_loss = float("inf")
     n_steps = ddpm.n_steps
 
-    for epoch in tqdm(range(n_epochs), desc=f"Training progress", colour="#00ff00"):
+    outer_pbar = tqdm(total=n_epochs, desc="Training progress", position=0, colour="#00ff00")
+    for epoch in range(n_epochs):
+
+        outer_pbar.set_description(f"Epoch {epoch + 1}/{n_epochs}")
+        inner_pbar = tqdm(total=len(loader), desc=f"Epoch {epoch + 1}/{n_epochs}", position=1, colour="#005500", leave=False)
+
         epoch_loss = 0.0
-        for step, batch in enumerate(tqdm(loader, desc=f"Epoch {epoch + 1}/{n_epochs}", colour="#005500")):
+        for step, batch in enumerate(loader):
             # Loading data
             x0 = batch[0].to(device)
             n = len(x0)
@@ -50,6 +55,11 @@ def training_loop(ddpm, loader, n_epochs, optim, device, display=False, store_pa
 
             epoch_loss += loss.item() * len(x0) / len(loader.dataset)
 
+            inner_pbar.update(1)
+            inner_pbar.set_postfix_str(f'Loss: {loss.item():.3f}')
+
+        inner_pbar.close()
+
         # Display images generated at this epoch
         if display and (epoch + 1) % 10 == 0:
             show_images(generate_new_images(ddpm, device=device), f"Images generated at epoch {epoch + 1}")
@@ -62,4 +72,6 @@ def training_loop(ddpm, loader, n_epochs, optim, device, display=False, store_pa
             torch.save(ddpm.state_dict(), store_path)
             log_string += " --> Best model ever (stored)"
 
-        print(log_string)
+        outer_pbar.set_postfix_str(log_string)
+        outer_pbar.update(1)
+    outer_pbar.close()
