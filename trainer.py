@@ -7,11 +7,11 @@ import os
 from utils import show_images, generate_new_images, show_forward
 
 
-def train_model(loader, n_epochs, lr, checkpoint_dir, dataset_name=None, device=None):
-    n_steps, min_beta, max_beta = 1000, 10 ** -4, 0.02
+def train_model(loader, n_epochs, lr, checkpoint_dir, dataset_name=None, device=None, n_steps=1000):
+    min_beta, max_beta = 10 ** -4, 0.02
     ddpm = MyDDPM(MyUNet(n_steps), n_steps=n_steps, min_beta=min_beta, max_beta=max_beta, device=device)
     # 显示前向加噪过程
-    # show_forward(ddpm, loader, device)
+    show_forward(ddpm, loader, device)
     optim = Adam(ddpm.parameters(), lr=lr)
     # 设置模型保存路径
     model_name = f"ddpm_{dataset_name}.pt"
